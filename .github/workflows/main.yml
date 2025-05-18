@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "version.txt"
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Read current version
+        id: get_current_version
+        shell: powershell
+        run: |
+          $CURRENT_VERSION = Get-Content version.txt
+          echo "CURRENT_VERSION=$CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Bump version
+        id: bump_version
+        shell: powershell
+        run: |
+          $CURRENT_VERSION = "${{ steps.get_current_version.outputs.current_version }}"
+          $VERSION_PARTS = $CURRENT_VERSION.Split('.')
+          $LAST_PART = [int]$VERSION_PARTS[-1]
+          $NEW_LAST_PART = $LAST_PART + 1
+          $VERSION_PARTS[-1] = $NEW_LAST_PART.ToString()
+          $NEW_VERSION = [string]::Join('.', $VERSION_PARTS)
+          echo "NEW_VERSION=$NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $env:GITHUB_OUTPUT
+          Set-Content -Path version.txt -Value $NEW_VERSION
+
+      - name: Configure Git for tagging and committing
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push version update
+        run: |
+          git add version.txt
+          git commit -m "Bump version to v${{ steps.bump_version.outputs.new_version }} [skip ci]"
+          git push origin main
+
+      - name: Create Tag
+        run: |
+          git tag -a "v${{ steps.bump_version.outputs.new_version }}" -m "Release v${{ steps.bump_version.outputs.new_version }}"
+          git push origin "v${{ steps.bump_version.outputs.new_version }}"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --name splexcel main.py
+        continue-on-error: false
+
+      - name: Package release
+        if: success()
+        run: |
+          mkdir release
+          copy dist\splexcel.exe release\
+          cd release
+          powershell Compress-Archive -Path splexcel.exe -DestinationPath splexcel.zip
+
+      - name: Install WiX Toolset
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip" -OutFile "wix311.zip"
+          Expand-Archive -Path "wix311.zip" -DestinationPath "wix311"
+          $env:PATH += ";$pwd\wix311"
+
+      - name: Build MSI
+        run: |
+          candle.exe -dVersion="${{ steps.bump_version.outputs.new_version }}" installer.wxs
+          light.exe -ext WixUIExtension -out "release\SpoolToExcel-Installer-${{ steps.bump_version.outputs.new_version }}.msi" installer.wixobj
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.bump_version.outputs.new_version }}
+          name: Release v${{ steps.bump_version.outputs.new_version }}
+          files: |
+            release/splexcel.zip
+            release/SpoolToExcel-Installer-${{ steps.bump_version.outputs.new_version }}.msi
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

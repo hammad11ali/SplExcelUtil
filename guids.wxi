@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include>
+	<!--
+	GUID Reference Documentation:
+	
+	UpgradeCode: Must remain the same across all versions of your product
+	MainExecutable: Component GUID for the main executable
+	ProgramMenuDir: Component GUID for start menu shortcuts
+	Path: Component GUID for PATH environment variable
+	-->
+	<!-- Product GUIDs -->
+	<?define UpgradeCodeGuid="41B0D1B9-8BBC-46A7-8467-79C2CE923E73"?>
+	<!-- Component GUIDs -->
+	<?define MainExecutableGuid="9431C085-931D-43D9-9A63-D3FC9FAFE58F"?>
+	<?define ProgramMenuDirGuid="C4A55A18-459F-45D7-A539-8E1D5D25C5ED"?>
+	<?define PathGuid="F7E9B8E1-7F54-4174-917C-98ACE6D108AF"?>
+</Include>

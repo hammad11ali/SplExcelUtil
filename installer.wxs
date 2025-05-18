@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<?include guids.wxi?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Name="Spool to Excel Converter" Id="*" UpgradeCode="$(var.UpgradeCodeGuid)" Language="1033" Codepage="1252" Version="$(var.Version)" Manufacturer="Codewarden">
+		<Package Id="*" Keywords="Installer" Description="Spool to Excel Converter Installer" Comments="Converts spool files to Excel" Manufacturer="Codewarden" InstallerVersion="100" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
+		<!-- Initialize ADDTOPATH property to default checked -->
+		<Property Id="ADDTOPATH" Value="1" />
+		<Media Id="1" Cabinet="Sample.cab" EmbedCab="yes" DiskPrompt="CD-ROM #1" />
+		<Property Id="DiskPrompt" Value="Spool to Excel Converter Installation [1]" />
+		<!-- Setup custom UI instead of the default -->
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+		<UI>
+			<UIRef Id="WixUI_InstallDir_NoLicense" />
+			<!-- Add PATH checkbox to the dialog -->
+			<Dialog Id="PathDlg" Width="370" Height="270" Title="Environment Variables">
+				<Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
+				<Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+				<Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
+					<Publish Event="SpawnDialog" Value="CancelDlg">
+						1
+					</Publish>
+				</Control>
+				<Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose whether to add the application directory to your PATH environment variable." />
+				<Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Environment Variables" />
+				<Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
+				<Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+				<Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+				<Control Id="PathCheckBox" Type="CheckBox" X="20" Y="100" Width="330" Height="17" Property="ADDTOPATH" CheckBoxValue="1" Text="Add Spool to Excel Converter to PATH environment variable" />
+			</Dialog>
+			<Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="PathDlg">
+				1
+			</Publish>
+			<Publish Dialog="PathDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg">
+				1
+			</Publish>
+			<Publish Dialog="PathDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">
+				1
+			</Publish>
+		</UI>
+		<!-- Custom UI sequence without license -->
+		<UI Id="WixUI_InstallDir_NoLicense">
+			<TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+			<TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+			<TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+			<Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+			<Property Id="WixUI_Mode" Value="InstallDir" />
+			<DialogRef Id="BrowseDlg" />
+			<DialogRef Id="DiskCostDlg" />
+			<DialogRef Id="ErrorDlg" />
+			<DialogRef Id="FatalError" />
+			<DialogRef Id="FilesInUse" />
+			<DialogRef Id="MsiRMFilesInUse" />
+			<DialogRef Id="PrepareDlg" />
+			<DialogRef Id="ProgressDlg" />
+			<DialogRef Id="ResumeDlg" />
+			<DialogRef Id="UserExit" />
+			<Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath" Order="3">
+				1
+			</Publish>
+			<Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4">
+				<![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]>
+			</Publish>
+			<Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">
+				1
+			</Publish>
+			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg">
+				NOT Installed
+			</Publish>
+			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">
+				Installed AND PATCH
+			</Publish>
+			<Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">
+				1
+			</Publish>
+			<Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">
+				1
+			</Publish>
+			<Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath" Order="2">
+				NOT WIXUI_DONTVALIDATEPATH
+			</Publish>
+			<Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3">
+				<![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]>
+			</Publish>
+			<Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1">
+				1
+			</Publish>
+			<Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2">
+				1
+			</Publish>
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="PathDlg" Order="1">
+				NOT Installed
+			</Publish>
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">
+				Installed AND NOT PATCH
+			</Publish>
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">
+				Installed AND PATCH
+			</Publish>
+			<Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">
+				1
+			</Publish>
+			<Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">
+				1
+			</Publish>
+			<Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">
+				1
+			</Publish>
+			<Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">
+				1
+			</Publish>
+			<Property Id="ARPNOMODIFY" Value="1" />
+		</UI>
+		<UIRef Id="WixUI_Common" />
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder" Name="PFiles">
+				<Directory Id="INSTALLDIR" Name="splexcel">
+					<Component Id="MainExecutable" Guid="$(var.MainExecutableGuid)">
+						<File Id="SpoolExeFile" Name="splexcel.exe" DiskId="1" Source="dist\splexcel.exe" KeyPath="yes">
+							<Shortcut Id="startmenuSpoolExe" Directory="ProgramMenuDir" Name="Spool to Excel Converter" WorkingDirectory="INSTALLDIR" Icon="SpoolExe.exe" IconIndex="0" Advertise="yes" />
+						</File>
+					</Component>
+					<Component Id="Path" Guid="$(var.PathGuid)">
+						<Condition>
+							ADDTOPATH
+						</Condition>
+						<Environment Id="PATH" Name="PATH" Value="[INSTALLDIR]" Permanent="no" Part="last" Action="set" System="yes" />
+						<RegistryValue Root="HKLM" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Type="integer" Value="1" KeyPath="yes" />
+					</Component>
+				</Directory>
+			</Directory>
+			<Directory Id="ProgramMenuFolder" Name="Programs">
+				<Directory Id="ProgramMenuDir" Name="Spool to Excel Converter">
+					<Component Id="ProgramMenuDir" Guid="$(var.ProgramMenuDirGuid)">
+						<RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+						<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
+					</Component>
+				</Directory>
+			</Directory>
+		</Directory>
+		<Feature Id="Complete" Level="1">
+			<ComponentRef Id="MainExecutable" />
+			<ComponentRef Id="ProgramMenuDir" />
+			<ComponentRef Id="Path" />
+		</Feature>
+		<Icon Id="SpoolExe.exe" SourceFile="dist\splexcel.exe" />
+	</Product>
+</Wix>
